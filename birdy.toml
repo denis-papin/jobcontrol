@@ -1,0 +1,13 @@
+# All the path are relative to the project path passed with the --project option.
+# Ex : /home/denis/official/eureka-server
+# ./jobcontrol run --server localhost --port 9999  --profile birdy-dev  --project /home/denis/birdy-server/ --file birdy.toml
+# ./jobcontrol stop --server localhost --port 9999  --profile birdy-dev
+
+[App]    
+    bin="${PROJECT}/target/birdy-server-*.jar"
+	cmd="/home/denis/app/jdk-11.0.2/bin/java -Dserver.port=${PORT} -Dspring.profiles.active=${PROFILE} -jar  ${bin} "
+
+[App.Status]
+	# TODO find a way to make this url generic
+    url="http://${SERVER}:${PORT}/reservation"
+    keyword="country"

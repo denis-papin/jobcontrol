@@ -1,0 +1,12 @@
+# All the path are relative to the project path passed with the --project option.
+# Ex : /home/denis/official/eureka-server
+# jobcontrol run --server eureka-peer-1-dev --port 20000  --profile ms-mission-dev  --project /home/denis/official/ms-mission --file ms-mission.toml
+
+[App]    
+    bin="${PROJECT}/target/ms-mission-*.jar"
+	cmd="java -Dserver.port=${PORT} -Dspring.profiles.active=${PROFILE} -jar  ${bin} "
+
+[App.Status]
+	# TODO find a way to make this url generic
+    url="http://${SERVER}:${PORT}/actuator/health"
+    keyword="UP"
