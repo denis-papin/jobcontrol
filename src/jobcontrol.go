@@ -62,6 +62,26 @@ func getConf(configFile string) *Config {
 }
 
 func parse_param( args []string ) *Params {
+
+
+	if len(args) == 1 {
+
+		fmt.Println("\nMissing arguments for jobcontrol \n");
+
+		fmt.Println("jobcontrol run|stop|list  --server <server-name> --port <port> --profile <profile>  --project  <path> --file <config file> ")
+
+		fmt.Println("\nExamples \n");
+
+		fmt.Println("jobcontrol run --server localhost --port 10010 --profile eureka-dev  --project /home/denis/official/eureka-server --file eureka.toml ")
+
+		fmt.Println("jobcontrol stop --server localhost [--port 10010] [--profile eureka-dev] ")
+
+		fmt.Println("jobcontrol list ")
+
+		os.Exit(-45)
+
+	} 
+
 	// parse the command line params
 	var param = &Params {"", "", "", "", "", "", ""} 
 
