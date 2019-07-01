@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"io"        
+	//"io"        
 	"net/http" 
 	"strconv"	
 	"bufio"
@@ -57,7 +57,7 @@ func getConf(configFile string) *Config {
     if _, err := toml.DecodeFile(configFile, &config); err != nil {
         log.Fatal(err)
     }
-    log.Print(config)
+    //log.Print(config)
     return &config
 }
 
@@ -94,7 +94,7 @@ func findMatch( pattern string ) string {
 	matches, err := filepath.Glob(pattern)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 
 	if len(matches) > 0 {
@@ -108,6 +108,7 @@ func findMatch( pattern string ) string {
 /**
 */
 func CreateDirIfNotExist(dir string) {
+	// fmt.Println("Check folder", dir)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 			err = os.MkdirAll(dir, 0755)
 			if err != nil {
@@ -133,12 +134,7 @@ func readPid(server string, profile string, port string) string {
 
 	var serviceName = server + "." + profile
 
-	job_control_folder := os.Getenv("JOB_CONTROL")
-
-	if job_control_folder == "" {
-		log.Fatal("The JOB_CONTROL environment variable must be defined")
-		os.Exit(-99)
-	}
+	job_control_folder := getJcFolder() 
 
 	var base_dir = job_control_folder + "/.jc"
 
@@ -146,62 +142,31 @@ func readPid(server string, profile string, port string) string {
 
 	filename := base_dir + "/" + serviceName + "." + port
 
-
 	return readTextFile(filename)
-
-/*
-	f, err := os.Open(filename)
-    if err != nil {
-        fmt.Println(err)
-        os.Exit(1)
-    }
-	defer f.Close()
-	
-    r := bufio.NewReader(f)
-    line, err := r.ReadString(10)    // line defined once 
-    for err != io.EOF {
-        fmt.Print(line)              // or any stuff
-        line, err = r.ReadString(10) //  line was defined before
-    }
-
-	var parts = strings.Split(line, ":")
-	var pid = strings.Trim( parts[1], " " )
-	return pid
-*/
 
 }
 
 func readTextFile( fileName string ) string {
 
-	fmt.Println("fileName", fileName)
+	// fmt.Println("fileName", fileName)
 
 	f, err := os.Open(fileName)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 		os.Exit(1)
 	}
 	defer f.Close()
 
 	r := bufio.NewReader(f)
 	line, err := r.ReadString(50)    // line defined once
-	fmt.Print("line 1 ", line)
-	if err != io.EOF {
-
-	}
-	/*
-	for err != io.EOF {
-		fmt.Print("line ", line)              // or any stuff
-		line2, err := r.ReadString(10) //  line was defined before
-		if err == nil {
-			line = line + line2
-		}
-	}*/
-
+	
+	// fmt.Print("line 1 ", line)
+	
 	line = strings.Trim(line, "\r")
 	line = strings.Trim(line, "\n")
 	line = strings.Trim(line, " ")
 
-	fmt.Println("line end {", line, "}")
+	// fmt.Println("line end {", line, "}")
 
 	var parts = strings.Split(line, ":")
 	var pid = strings.Trim( parts[1], " " )
@@ -214,12 +179,7 @@ func writePid(pid int, server string, profile string, port string  ) {
 		
 	var serviceName = server + "." + profile
 
-	job_control_folder := os.Getenv("JOB_CONTROL")
-
-	if job_control_folder == "" {
-		log.Fatal("The JOB_CONTROL environment variable must be defined")
-		os.Exit(-99)
-	}
+	job_control_folder := getJcFolder() 
 
 	var base_dir = job_control_folder + "/.jc"
 
@@ -239,14 +199,7 @@ func writePid(pid int, server string, profile string, port string  ) {
 
 func deletePid( server string, profile string, port string  ) {
 	var serviceName = server + "." + profile
-
-	job_control_folder := os.Getenv("JOB_CONTROL")
-
-	if job_control_folder == "" {
-		log.Fatal("The JOB_CONTROL environment variable must be defined")
-		os.Exit(-99)
-	}
-
+	job_control_folder := getJcFolder() 
 	var base_dir = job_control_folder + "/.jc"
 
 	filename := base_dir + "/" + serviceName + "." + port
@@ -271,12 +224,7 @@ func check(e error) {
  */
 func genericMatch( expression string ) []string {
 
-	job_control_folder := os.Getenv("JOB_CONTROL")
-
-	if job_control_folder == "" {
-		log.Fatal("The JOB_CONTROL environment variable must be defined")
-		os.Exit(-99)
-	}
+	job_control_folder := getJcFolder() 
 
 	var base_dir = job_control_folder + "/.jc"
 
@@ -296,53 +244,31 @@ func genericMatch( expression string ) []string {
  */
 func list(param *Params) {
 
-	fmt.Println(" Listing  : " , param.server)
+	// fmt.Println(" Listing  : " , param.server)
+	matches := genericMatch("*")
 
-	/*
-	job_control_folder := os.Getenv("JOB_CONTROL")
+	showHeader()
 
-	if job_control_folder == "" {
-		log.Fatal("The JOB_CONTROL environment variable must be defined")
-		os.Exit(-99)
+	for _, ff := range matches {
+		// fmt.Println("file:", ff)
+
+		filename := filepath.Base(ff)
+		parts := strings.Split(filename, ".")
+		// fmt.Println(filename)
+		pid, _ := strconv.Atoi(readTextFile(ff))
+		param1 := Params{parts[0],  parts[2], parts[1], "", "", "", ""}
+		showInfo(pid, &param1, "Running")
 	}
 
-	var base_dir = job_control_folder + "/.jc"
-
-	// Read all the pid files
-	var matches []string
-	var err error
-	matches, err = filepath.Glob(base_dir + "/*")
-
-	 */
-
-	matches := genericMatch("*")
-	/*
-	if err != nil {
-		log.Fatal(err)
-	} else {
-*/
-		showHeader()
-
-		for _, ff := range matches {
-			fmt.Println("file:", ff)
-
-			filename := filepath.Base(ff)
-			parts := strings.Split(filename, ".")
-			fmt.Println(filename)
-			pid, _ := strconv.Atoi(readTextFile(ff))
-			param1 := Params{parts[0],  parts[2], parts[1], "", "", "", ""}
-			showInfo(pid, &param1, "Running")
-		}
-//	}
 
 }
 
 
 func starIfEmpty(str string) string {
 
-	fmt.Println("STRING TO STAR :[", str, "]")
+	//fmt.Println("STRING TO STAR :[", str, "]")
 	if strings.Trim(str, " ") == "" {
-		fmt.Println("EMPTY")
+	//	fmt.Println("EMPTY")
 		return "*"
 	}
 	return str
@@ -353,26 +279,25 @@ func starIfEmpty(str string) string {
  */
 func stop(param *Params) {
 	
-	fmt.Println(" Stopping  : " , param.server)
+	// fmt.Println(" Stopping  : " , param.server)
 
 	expression := starIfEmpty(param.server) + "." + starIfEmpty(param.profile) + "." + starIfEmpty(param.port)
-
 	matches := genericMatch(expression)
 
-	fmt.Println("Matches  : ", matches)
+	// fmt.Println("Matches  : ", matches)
 
 	showHeader()
 
 	for _, ff := range matches {
-		fmt.Println("file:", ff)
+		// fmt.Println("file:", ff)
 
 		filename := filepath.Base(ff)
 		parts := strings.Split(filename, ".")
-		fmt.Println(filename)
+		// fmt.Println(filename)
 		pid_str := readTextFile(ff)
 		pid, _ := strconv.Atoi(pid_str)
 
-		fmt.Println("found pid : ", pid)
+		// fmt.Println("found pid : ", pid)
 
 		param1 := Params{parts[0],  parts[2], parts[1], "", "", "", ""}
 
@@ -388,28 +313,10 @@ func stop(param *Params) {
 
 		}
 
-		// showInfo(pid, &param1, "Running")
 	}
 
 	os.Exit(0)
 
-	/*
-	var pid = readPid(param.server, param.profile, param.port)
-	fmt.Println("found pid : ", pid)
-
-	cmd := exec.Command( "kill", "-9", pid )
-	cmd.Stdout = os.Stdout
-	err := cmd.Start()
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		deletePid(param.server, param.profile, param.port)
-		showHeader()
-		strPid , _ := strconv.Atoi(pid)
-		showInfo(strPid, param, "Stopped")
-		os.Exit(0)
-	}
-	*/
 }
 
 
@@ -420,7 +327,7 @@ func run(param *Params) {
 	// Read the .toml file
 
 	conf := getConf(param.file)
-	fmt.Println(" configuration file  : " , conf)
+	// fmt.Println(" configuration file  : " , conf)
 
 	// Evaluate the expressions, replace the values in each conf param.
 
@@ -428,14 +335,21 @@ func run(param *Params) {
 	conf.App.Bin = evaluate( conf.App.Bin, param )
 	param.bin = conf.App.Bin;
 
+	//fmt.Println("Evaluate bin :", param.bin)
+
 	// Found the binary (jar) that matches the pattern, ex : /home/denis/official/eureka-server/target/eureka-server-*.jar
 	// Give /home/denis/official/eureka-server/target/eureka-server-0.0.1-SNAPSHOT.jar
 	param.bin = findMatch( param.bin )
-	fmt.Println("FOUND MATCH :", param.bin)
+	
+	if param.bin == "" {
+		log.Fatal("No binary file found" )
+	}
+
+	//fmt.Println("FOUND MATCH :", param.bin)
 
 	// cmd
 	conf.App.Cmd = evaluate( conf.App.Cmd, param )
-	fmt.Println(" Cmd  : " , conf.App.Cmd)
+	//fmt.Println(" Cmd  : " , conf.App.Cmd)
 
 	// Url
 	conf.App.Status.Url = evaluate( conf.App.Status.Url, param )
@@ -448,17 +362,20 @@ func run(param *Params) {
 	var clean_parts []string = []string{}
 
 	for _, part := range parts {
-		fmt.Println("[", part, "]")
+
 		if strings.Trim(part, " ") != "" {			
 			clean_parts = append( clean_parts, strings.Trim(part, " ") )
-			fmt.Println("clean parts : ", clean_parts )
+
 		}		
 	}
 	
-	fmt.Println("clean parts 0 :", clean_parts[0] )
-	fmt.Println("clean parts 1+ :", clean_parts[1:] )
 
-	cmd := exec.Command(clean_parts[0], clean_parts[1:]...)
+	command := clean_parts[0]
+	args := clean_parts[1:]
+
+	log.Println("[", command, args, "]")
+
+	cmd := exec.Command( command, args...)
 
 	/* -- WORKS
 	cmd := exec.Command(
@@ -473,35 +390,32 @@ func run(param *Params) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Just ran subprocess %d, exiting\n", cmd.Process.Pid)
-	
-	//writePid( cmd.Process.Pid, param.server, param.profile, param.port )
+	//log.Printf("Just ran subprocess %d, exiting\n", cmd.Process.Pid)
 	
 	// URL check 
-	// we could check if the service is UP with : 
 	
 	var success = false
 	
-	// loop until the status is valid
+	// loop until the status is "UP"
 
 	for !success {
 
-		fmt.Println("Trying the server...")
+		log.Println("Trying the server...")
 
 		response, err := http.Get(conf.App.Status.Url)
 
 		if err != nil {
-			fmt.Println("No Response Yet")				
+			log.Println("No Response Yet")
 		} else {
 				defer response.Body.Close()
-				//_, err := io.Copy("/dev/null", response.Body)
+		
 				_, err := ioutil.ReadAll(response.Body)
 				if err != nil {						
-					fmt.Println("No Response Yet")
+					log.Println("No Response Yet")
 
 				} else {
 					success = true
-					fmt.Println("!! Server is running !!")
+					log.Println("!! Server is running !!")
 				}
 		}
 
@@ -518,7 +432,20 @@ func run(param *Params) {
 	showInfo(cmd.Process.Pid, param, "Running")
 	os.Exit(0)
 
+}
 
+
+func getJcFolder() string {
+
+	job_control_folder, _ := os.LookupEnv("HOME")
+	job_control_folder = strings.Trim(job_control_folder, " ")
+	if job_control_folder == "" {
+		log.Fatal("Cannot find the $HOME environment variable.")
+		os.Exit(-99)
+	}
+
+	// fmt.Println("Found JC folder : ", job_control_folder )
+	return job_control_folder
 }
 
 func showHeader() {
@@ -536,7 +463,7 @@ func main() {
 	// parse the command line params
 	var param = parse_param(os.Args)
 
-	fmt.Println(param)
+	//fmt.Println(param)
 
 	switch param.action {
 
