@@ -10,7 +10,7 @@ import (
 	//"io"        
 	"net/http" 
 	"strconv"	
-	"bufio"
+	// "bufio"
 	"github.com/BurntSushi/toml"
 	"strings"
 	"path/filepath"
@@ -168,7 +168,7 @@ func readPid(server string, profile string, port string) string {
 
 func readTextFile( fileName string ) string {
 
-	// fmt.Println("fileName", fileName)
+	// fmt.Println(">> FileName", fileName)
 
 	f, err := os.Open(fileName)
 	if err != nil {
@@ -177,16 +177,20 @@ func readTextFile( fileName string ) string {
 	}
 	defer f.Close()
 
-	r := bufio.NewReader(f)
-	line, err := r.ReadString(50)    // line defined once
+	//r := bufio.NewReader(f)
+	//line, err := r.ReadString(100)    // line defined once
+
+	b, err := ioutil.ReadAll(f)
+
+	line := string(b)
 	
-	// fmt.Print("line 1 ", line)
+	//fmt.Println(">> Line : ", line)
 	
 	line = strings.Trim(line, "\r")
 	line = strings.Trim(line, "\n")
 	line = strings.Trim(line, " ")
 
-	// fmt.Println("line end {", line, "}")
+	//fmt.Println(">> Clean line : ", line )
 
 	var parts = strings.Split(line, ":")
 	var pid = strings.Trim( parts[1], " " )
@@ -479,6 +483,8 @@ func showInfo(pid int, param *Params, status string) {
 /**
 */
 func main() {
+
+	fmt.Println("jobcontrol v1.0\n")
 
 	// parse the command line params
 	var param = parse_param(os.Args)
